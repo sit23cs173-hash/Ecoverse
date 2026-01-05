@@ -1,0 +1,7 @@
+2026-01-05 14:48:08,941 - INFO - 
+To setup Kaggle API:
+2026-01-05 14:48:08,941 - INFO - 1. Go to https://www.kaggle.com/settings
+2026-01-05 14:48:08,941 - INFO - 2. Click 'Create New API Token'
+2026-01-05 14:48:08,941 - INFO - 3. Place kaggle.json in:
+2026-01-05 14:48:08,941 - INFO -    Windows: C:\Users\yuvanshankar\.kaggle
+2026-01-05 14:48:08,941 - INFO -    Linux/Mac: ~/.kaggle/

@@ -1,0 +1,86 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Data files
+*.npy
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Large datasets (keep structure, ignore actual data files)
+data/raw/amazon_sentinel2/
+data/raw/deforestation_competition/train/
+data/raw/deforestation_competition/ss.csv
+data/processed/
+
+# Model outputs
+outputs/models/*.h5
+outputs/models/*.keras
+outputs/evaluation/
+outputs/evaluation_ground_truth/
+outputs/validation/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Environment variables
+.env
+.env.local
+
+# Training artifacts
+wandb/
+mlruns/
+
+# Streamlit
+.streamlit/secrets.toml
