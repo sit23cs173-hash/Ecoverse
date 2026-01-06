@@ -31,7 +31,7 @@ class DeforestationDetector:
         
         Args:
             input_shape: Input image shape (height, width, channels)
-            model_type: Model architecture ('unet', 'siamese', 'simple_cnn')
+            model_type: Model architecture ('unet', 'mobilenet_unet', 'siamese', 'simple_cnn')
         """
         self.input_shape = input_shape
         self.model_type = model_type
@@ -149,6 +149,94 @@ class DeforestationDetector:
         model = keras.Model(inputs=[input_before, input_after], outputs=output)
         return model
     
+    def build_mobilenet_unet(self, pretrained: bool = True, trainable: bool = False) -> keras.Model:
+        """
+        Build MobileNetV2-based U-Net with transfer learning.
+        More accurate than basic U-Net, uses pre-trained ImageNet weights.
+        
+        Args:
+            pretrained: Use ImageNet pre-trained weights
+            trainable: Whether to make base model trainable initially
+        
+        Returns:
+            Compiled MobileNetV2 U-Net model
+        """
+        logger.info(f"Building MobileNetV2 U-Net (pretrained={pretrained}, trainable={trainable})")
+        
+        # Load MobileNetV2 as encoder with pre-trained weights
+        base_model = MobileNetV2(
+            input_shape=self.input_shape,
+            include_top=False,
+            weights='imagenet' if pretrained else None
+        )
+        
+        # Extract intermediate layers for skip connections
+        layer_names = [
+            'block_1_expand_relu',   # 128x128
+            'block_3_expand_relu',   # 64x64
+            'block_6_expand_relu',   # 32x32
+            'block_13_expand_relu',  # 16x16
+            'block_16_project',      # 8x8
+        ]
+        
+        base_model_outputs = [base_model.get_layer(name).output for name in layer_names]
+        
+        # Create feature extraction model (encoder)
+        down_stack = keras.Model(inputs=base_model.input, outputs=base_model_outputs)
+        down_stack.trainable = trainable
+        
+        # Build decoder (upsampling path)
+        def upsample_block(filters, size, apply_dropout=False):
+            """Create upsampling block for decoder"""
+            initializer = tf.random_normal_initializer(0., 0.02)
+            
+            result = keras.Sequential()
+            result.add(layers.Conv2DTranspose(
+                filters, size, strides=2,
+                padding='same',
+                kernel_initializer=initializer,
+                use_bias=False
+            ))
+            result.add(layers.BatchNormalization())
+            
+            if apply_dropout:
+                result.add(layers.Dropout(0.5))
+            
+            result.add(layers.ReLU())
+            return result
+        
+        up_stack = [
+            upsample_block(512, 3),   # 8x8 -> 16x16
+            upsample_block(256, 3),   # 16x16 -> 32x32
+            upsample_block(128, 3),   # 32x32 -> 64x64
+            upsample_block(64, 3),    # 64x64 -> 128x128
+        ]
+        
+        # Assemble U-Net
+        inputs = layers.Input(shape=self.input_shape)
+        
+        # Encoder (downsampling with skip connections)
+        skips = down_stack(inputs)
+        x = skips[-1]
+        skips = reversed(skips[:-1])
+        
+        # Decoder (upsampling with skip connections)
+        for up, skip in zip(up_stack, skips):
+            x = up(x)
+            x = layers.Concatenate()([x, skip])
+        
+        # Final upsampling to original size (128x128 -> 256x256)
+        x = layers.Conv2DTranspose(
+            1, 3, strides=2,
+            activation='sigmoid',
+            padding='same'
+        )(x)
+        
+        model = keras.Model(inputs=inputs, outputs=x)
+        
+        logger.info(f"MobileNetV2 U-Net built with {model.count_params():,} parameters")
+        return model
+    
     def build_simple_cnn(self) -> keras.Model:
         """
         Build simple CNN for change detection.
@@ -186,6 +274,8 @@ class DeforestationDetector:
         """Build model based on specified architecture."""
         if self.model_type == 'unet':
             self.model = self.build_unet_model()
+        elif self.model_type == 'mobilenet_unet':
+            self.model = self.build_mobilenet_unet(pretrained=True, trainable=False)
         elif self.model_type == 'siamese':
             self.model = self.build_siamese_network()
         elif self.model_type == 'simple_cnn':

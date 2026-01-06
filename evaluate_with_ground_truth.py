@@ -44,7 +44,11 @@ class GroundTruthEvaluator:
         if not self.model_path.exists():
             raise FileNotFoundError(f"Model not found at: {self.model_path}")
         
-        detector = DeforestationDetector(input_shape=(256, 256, 3), model_type='unet')
+        # Auto-detect model type from filename
+        model_type = 'mobilenet_unet' if 'mobilenet' in str(self.model_path).lower() else 'unet'
+        logger.info(f"Detected model type: {model_type}")
+        
+        detector = DeforestationDetector(input_shape=(256, 256, 3), model_type=model_type)
         detector.load_model(str(self.model_path))
         self.model = detector.model
         
@@ -463,10 +467,10 @@ class GroundTruthEvaluator:
 def main():
     """Main evaluation function"""
     
-    model_path = './outputs/models/ground_truth_unet_model.h5'
+    model_path = './outputs/models/mobilenet_unet_model.h5'
     
     print("\n" + "="*80)
-    print("🌲 DEFORESTATION MODEL - GROUND TRUTH EVALUATION")
+    print("🌲 MOBILENETV2 U-NET - GROUND TRUTH EVALUATION")
     print("="*80)
     print("\n✅ Using REAL labeled ground truth masks from competition dataset")
     
